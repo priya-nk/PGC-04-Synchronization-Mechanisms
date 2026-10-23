@@ -6,7 +6,7 @@ A shared-memory parallel programming experiment that implements and compares com
 
 To implement and study:
 
-- Unsynchronized updates (race condition)
+- Race Conditions
 - Critical sections
 - Atomic operations
 - Barriers
@@ -25,6 +25,24 @@ and to measure how they behave with 1, 2, 4, and 8 threads.
 | Threads / semaphores | POSIX Threads (`pthread`, `semaphore.h`) |
 | Recommended VM resources | 4+ CPU cores, 2-4 GB RAM, 20 GB disk |
 
+
+## Directory Structure
+```
+├── scripts/
+│   ├── benchmark.sh
+│   └── scripts.sh
+├── README.md
+├── atomic.c
+├── barrier.c
+├── compare_sync.c
+├── critical.c
+├── file_run_results_of_counter.jpeg     # Terminal output of Programs 1-5
+├── race.c
+├── results.jpeg
+└── semaphore.c                          # Terminal output of the compare_sync benchmark
+```
+
+
 ## Setup
 
 ```bash
@@ -36,17 +54,10 @@ gcc --version
 echo '#include <omp.h>' | gcc -E -fopenmp -xc - > /dev/null && echo OpenMP OK
 ```
 
-## Project Structure
-
-```
-.
-├── race.c           # Program 1 - Race condition (no synchronization)
-├── critical.c       # Program 2 - OpenMP critical section
-├── atomic.c         # Program 3 - OpenMP atomic operation
-├── barrier.c        # Program 4 - OpenMP barrier
-├── semaphore.c      # Program 5 - POSIX semaphore (binary)
-├── compare_sync.c   # Program 6 - Benchmark of all strategies
-└── README.md
+Or use the helper script:
+``` bash
+chmod +x scripts/*.sh
+./scripts/scripts.sh setup
 ```
 
 ## Programs
@@ -91,6 +102,23 @@ export OMP_NUM_THREADS=8
 ./critical
 ```
 
+Using the helper scripts
+``` bash
+chmod +x scripts/*.sh               # one-time: make the scripts executable
+
+./scripts/scripts.sh setup          # install GCC / OpenMP and verify
+./scripts/scripts.sh compile        # compile all programs
+./scripts/scripts.sh run            # run all programs
+./scripts/scripts.sh all            # compile + run (default)
+./scripts/scripts.sh clean          # remove compiled binaries
+
+THREADS=4 ./scripts/scripts.sh run  # run everything with 4 threads
+
+./scripts/benchmark.sh              # run compare_sync 5 times and average
+./scripts/benchmark.sh 10           # run compare_sync 10 times and average
+```
+
+
 ## Results
 
 ### Individual programs
@@ -103,7 +131,8 @@ export OMP_NUM_THREADS=8
 | `barrier` | All "before barrier" lines print before any "after barrier" line | Phases synchronized |
 | `semaphore` | `Counter=200000` | Correct |
 
-> Note: the individual programs were run in the author's terminal with a loop count that produced a final value of 40,000,000 for the correct runs, so the loop bound in those source files may differ from the 10,000,000 shown in the report listings. Adjust the loop bound in the source to match your own run.
+<img width="620" height="413" alt="file_run_results_of_counter" src="https://github.com/user-attachments/assets/ad58db76-5243-4d64-92f6-9e48a35b15a4" />
+
 
 ### Benchmark (`compare_sync`, 10,000,000 increments)
 <img width="619" height="572" alt="results" src="https://github.com/user-attachments/assets/60ebb46b-d8ee-4b74-b8bd-de4ba1e093e6" />
@@ -139,3 +168,5 @@ Key takeaways from the measured run:
 ## Conclusion
 
 Atomic operations offer the best balance of correctness and performance for simple shared-variable updates. Critical sections and locks guarantee correctness but limit scalability. Barriers coordinate phases rather than protect data. Semaphores generalize mutual exclusion at moderate overhead. Unsynchronized access is fastest but unreliable, so the choice of mechanism is a trade-off between strength of guarantee, overhead, and scalability.
+
+
